@@ -246,7 +246,7 @@
     .filter-tab.active { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
 
     /* ── SETTINGS ── */
-    .settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; max-width:480px; }
+    .settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px; max-width:680px; }
     .settings-title { font-size:1rem; font-weight:600; margin-bottom:20px; }
 
     /* ── SPINNER ── */
@@ -368,7 +368,7 @@
           <div class="form-field"><label>Confirmer</label><input type="password" id="confirm-password" placeholder="Répétez le mot de passe"/></div>
           <button class="btn btn-primary" onclick="changePassword()">Enregistrer</button>
         </div>
-        <div class="settings-card" style="margin-top:20px">
+        <div class="settings-card " style="margin-top:20px ;display: block ; display: none;">
           <div class="settings-title">ℹ️ Configuration Laravel</div>
           <p style="color:var(--muted);font-size:.88rem;line-height:2">
             <strong style="color:var(--text)">API URL :</strong> <span id="api-url-display"></span><br>
@@ -453,8 +453,11 @@
 // ════════════════════════════════════════════════════════
 // CONFIG — Modifiez cette URL selon votre serveur Laravel
 // ════════════════════════════════════════════════════════
-const API = "http://localhost:8000/api";  // php artisan serve (dev)
-// const API = "https://votre-domaine.com/api";  // production
+const API =
+  window.location.hostname.includes("127.0.0.1") ||
+  window.location.hostname.includes("localhost")
+    ? "http://localhost:8000/api"
+    : "https://evahstore-api.up.railway.app/api";// const API = "https://evahstore-api.up.railway.app/api";";  // production
 
 document.getElementById("api-url-display").textContent = API;
 
