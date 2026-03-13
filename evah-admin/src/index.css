@@ -1,0 +1,14 @@
+@import "tailwindcss";
+/* couleurs EvahStore */
+:root{
+  --gold:#D4AF37;
+  --gold-light:#e8c94a;
+  --surface:#111111;
+  --surface2:#181818;
+  --surface3:#222222;
+}
+
+body{
+  background:#0a0a0a;
+  color:#f0eeee;
+}
