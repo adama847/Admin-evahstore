@@ -28,10 +28,24 @@ export async function logout(token) {
 export async function changePassword(token, password) {
   const res = await fetch(`${API}/auth/change-password`, {
     method: "POST",
-    headers: { ...authHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ password }),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      new_password: password,
+      new_password_confirmation: password,
+    }),
   });
-  return res.json();
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw data;
+  }
+
+  return data;
 }
 
 // --- STATS ---

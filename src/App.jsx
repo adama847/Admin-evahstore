@@ -44,7 +44,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
+    <div className="flex-1 md:ml-64 min-h-screen bg-gray-200 text-black">
       {/* Sidebar */}
       <Sidebar
         activePage={activePage}
@@ -60,13 +60,13 @@ export default function App() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden absolute top-4 left-4 z-50 bg-yellow-400 text-black px-3 py-1 rounded-lg font-bold"
+            className="md:hidden absolute top-4 left-4 z-50 bg-[#D4AF37] text-black px-3 py-1 rounded-lg font-bold"
           >
             ☰
           </button>
         )}
 
-        <div className="p-6">{renderPage()}</div>
+        <div className="p-6 ">{renderPage()}</div>
       </div>
     </div>
   );

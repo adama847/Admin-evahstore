@@ -8,7 +8,13 @@ export default function Products({ token }) {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+const [currentPage, setCurrentPage] = useState(1);
+const productsPerPage = 6;
+const indexOfLastProduct = currentPage * productsPerPage;
+const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
 
+const totalPages = Math.ceil(products.length / productsPerPage);
   // Charger les produits
   useEffect(() => {
     async function fetchProducts() {
@@ -74,61 +80,65 @@ export default function Products({ token }) {
     }
   };
 
-  if (loading) return <div className="text-white text-center">Chargement des produits...</div>;
+  if (loading) return <div className="text-black text-center">Chargement des produits...</div>;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-white">Liste des Produits</h2>
+    <div className="space-y-4 p-6">
+      <h2 className="text-2xl font-bold text-black sm:text-center">Liste des Produits</h2>
       <button
         onClick={handleAdd}
-        className="px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-500 transition"
+        className="px-4 py-2 bg-[#D4AF37] font-bold text-black rounded hover:bg-yellow-500 transition"
       >
-     Ajouter un produit
+        Ajouter un produit
       </button>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.length === 0 && <div className="text-gray-400">Aucun produit trouvé.</div>}
-        {products.map(product => (
-          <div key={product.id} className="bg-gray-800 p-4 rounded-lg flex flex-col justify-between border border-yellow-700">
+        {currentProducts.map(product => (
+          <div key={product.id} className="bg-white group relative p-0 rounded-lg flex flex-col justify-between z-10  ">
             <div>
-              <h3 className="text-white font-semibold">{product.name}</h3>
-              <p className="text-gray-400 text-sm">{product.description}</p>
-              <p className="text-yellow-400 font-bold mt-2">{product.price} XOF</p>
-         {product.image_url && (
-  product.is_video ? (
-    <video
-      src={product.image_url}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="auto"
-      className="w-full h-40 object-cover rounded-md border border-yellow-700 mt-2"
-    />
-  ) : (
-    <img
-      src={product.image_url}
-      alt={product.name}
-      loading="lazy"
-      className="w-full h-40 object-cover rounded-md border border-yellow-700 mt-2"
-    />
-  )
-)}
+              {product.image_url && (
+                product.is_video ? (
+                  <video
+                    src={product.image_url}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                    className="w-100 h-80 object-cover rounded-md "
+                  />
+                ) : (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    loading="lazy"
+                    className="w-100 h-80 object-cover rounded-md  "
+                  />
+                )
+              )}
+              <h3 className="text-black mt-2  ms-5 text-xl font-bold font-serif">{product.name}</h3>
+              <p className="text-black ms-5 text-sm">{product.description}</p>
+              <p className="text-[#D4AF37] ms-5 mb-13 font-semibold mt-2">{product.price} FCFA</p>
+
             </div>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => handleEdit(product)}
-                className="flex-1 py-1 text-xs text-blue-400 border border-blue-400 rounded hover:bg-blue-400 hover:text-white transition"
-              >
-                Modifier
-              </button>
-              <button
-                onClick={() => handleDelete(product.id)}
-                className="flex-1 py-1 text-xs text-red-500 border border-red-500 rounded hover:bg-red-500 hover:text-white transition"
-              >
-                Supprimer
-              </button>
-            </div>
+            <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+
+    <button
+      onClick={() => handleEdit(product)}
+      className="flex-1 py-2 text-xs bg-blue-500 text-white rounded"
+    >
+      Modifier
+    </button>
+
+    <button
+      onClick={() => handleDelete(product.id)}
+      className="flex-1 py-2 text-xs bg-red-500 text-white rounded"
+    >
+      Supprimer
+    </button>
+
+  </div>
           </div>
         ))}
       </div>
@@ -139,6 +149,30 @@ export default function Products({ token }) {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
       />
+
+      <div className="flex justify-center items-center gap-4 mt-6">
+
+  <button
+    disabled={currentPage === 1}
+    onClick={() => setCurrentPage(currentPage - 1)}
+    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+  >
+    Précédent
+  </button>
+
+  <span className="font-semibold">
+    Page {currentPage} / {totalPages}
+  </span>
+
+  <button
+    disabled={currentPage === totalPages}
+    onClick={() => setCurrentPage(currentPage + 1)}
+    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+  >
+    Suivant
+  </button>
+
+</div>
     </div>
   );
 }
