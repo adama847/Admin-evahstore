@@ -49,7 +49,7 @@ export default function Dashboard({ token }) {
         {statCards.map((card) => (
           <div
             key={card.id}
-            className="stat-card bg-white border border-[#D4AF37] p-4 rounded-xl flex flex-col items-center justify-center gap-2"
+            className="stat-card bg-white border shadow border-[#D4AF37] p-4 rounded-xl flex flex-col items-center justify-center gap-2"
           >
             <div className="stat-icon text-4xl">{card.icon}</div>
             <div id={card.id} className="stat-value text-2xl font-bold text-[#D4AF37]">

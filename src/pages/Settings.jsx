@@ -72,7 +72,7 @@ export default function Settings({ token }) {
         Paramètres
       </h1>
 
-      <div className="w-full py-8 space-y-4 bg-[#000000] p-6  rounded-xl">
+      <div className="w-full py-8 space-y-4 bg-[#000000] p-6 shadow  rounded-xl">
 
         {/* nouveau mot de passe */}
         <label className="text-xs  text-[#D4AF37] font-semibold uppercase">

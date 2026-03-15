@@ -95,7 +95,7 @@ const totalPages = Math.ceil(products.length / productsPerPage);
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.length === 0 && <div className="text-gray-400">Aucun produit trouvé.</div>}
         {currentProducts.map(product => (
-          <div key={product.id} className="bg-white group relative p-0 rounded-lg flex flex-col justify-between z-10  ">
+          <div key={product.id} className="bg-white group relative p-0 rounded-lg flex flex-col shadow justify-between z-10  ">
             <div>
               {product.image_url && (
                 product.is_video ? (
