@@ -58,7 +58,7 @@ export default function Login({ onLogin }) {
 
   return (
 
-    <div className="flex items-center justify-center h-screen bg-gray-100">
+    <div className="flex items-center justify-center h-screen bg-[#050502]">
 
       <div className="bg-black p-8 rounded-2xl w-full max-w-md border border-[#D4AF37]">
 
