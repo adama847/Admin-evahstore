@@ -11,9 +11,18 @@ export default function Products({ token }) {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 6;
 
-  // Fonction pour forcer le HTTPS (évite le Mixed Content)
+  // FONCTION CORRIGÉE : Ne force le HTTPS que si on n'est pas en local
   const secureUrl = (url) => {
     if (!url) return "";
+    
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    
+    if (isLocal) {
+      // En local, on garde le HTTP (ou l'URL originale)
+      return url;
+    }
+    
+    // En production (Railway), on force le HTTPS pour éviter le "Mixed Content"
     return url.replace("http://", "https://");
   };
 
@@ -110,7 +119,7 @@ export default function Products({ token }) {
               {product.image_url && (
                 product.is_video ? (
                   <video
-                    src={secureUrl(product.image_url)} // Nettoyage HTTPS ici
+                    src={secureUrl(product.image_url)} 
                     autoPlay
                     muted
                     loop
@@ -119,7 +128,7 @@ export default function Products({ token }) {
                   />
                 ) : (
                   <img
-                    src={secureUrl(product.image_url)} // Nettoyage HTTPS ici
+                    src={secureUrl(product.image_url)} 
                     alt={product.name}
                     loading="lazy"
                     className="w-full h-80 object-cover"
@@ -133,7 +142,6 @@ export default function Products({ token }) {
               </div>
             </div>
 
-            {/* Boutons d'action visibles au survol */}
             <div className="absolute inset-x-0 bottom-0 bg-black/60 p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                 <button
                   onClick={() => handleEdit(product)}

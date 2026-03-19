@@ -11,9 +11,18 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
         imageFile: null,
     });
 
-    // Fonction pour forcer le HTTPS sur les liens reçus du backend
-    const ensureHttps = (url) => {
+    // FONCTION CORRIGÉE : Ne force le HTTPS que hors mode local
+    const secureUrl = (url) => {
         if (!url) return "";
+
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+        if (isLocal) {
+            // En local, on ne touche à rien pour éviter l'erreur ERR_CONNECTION_CLOSED
+            return url;
+        }
+
+        // En production, on assure le HTTPS
         return url.replace("http://", "https://");
     };
 
@@ -25,8 +34,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
                 category: product.category || "",
                 badge: product.badge || "",
                 description: product.description || "",
-                // On sécurise l'URL dès le chargement du produit
-                imageUrl: ensureHttps(product.image_url) || "",
+                // Utilisation de la fonction sécurisée au chargement
+                imageUrl: secureUrl(product.image_url) || "",
                 imageFile: null,
             });
         } else {
@@ -39,8 +48,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
         if (files) {
             setForm({ ...form, imageFile: files[0] });
         } else {
-            // Si l'utilisateur colle une URL manuellement, on s'assure qu'elle soit en https
-            const finalValue = name === "imageUrl" ? ensureHttps(value) : value;
+            // Si c'est l'URL, on applique la logique de sécurité intelligente
+            const finalValue = name === "imageUrl" ? secureUrl(value) : value;
             setForm({ ...form, [name]: finalValue });
         }
     };
@@ -49,10 +58,10 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
 
     if (!isOpen) return null;
 
-    // Déterminer la source de l'aperçu (Fichier local ou URL distante)
+    // Déterminer la source de l'aperçu
     const previewSrc = form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageUrl;
     
-    // Détecter si c'est une vidéo (via le type de fichier ou l'extension de l'URL)
+    // Détecter si c'est une vidéo
     const isVideo = form.imageFile?.type?.startsWith("video") || form.imageUrl?.toLowerCase().endsWith(".mp4");
 
     return (
@@ -102,13 +111,14 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
 
                     <div>
                         <label className="text-xs text-gray-50 uppercase mb-1 block">Image ou Vidéo (URL ou fichier)</label>
-                        <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black mb-2" placeholder="https://..." />
+                        <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black mb-2" placeholder="http://localhost:8000/..." />
                         <input type="file" name="imageFile" onChange={handleChange} className="text-gray-900 border bg-gray-300 hover:bg-gray-400 rounded-2xl py-2 ms-2 mb-2 w-full" />
                         
                         {previewSrc && (
                             <div className="mt-2">
                                 {isVideo ? (
                                     <video
+                                        key={previewSrc} // Ajout d'une clé pour forcer le rafraîchissement si l'URL change
                                         src={previewSrc}
                                         autoPlay
                                         muted
