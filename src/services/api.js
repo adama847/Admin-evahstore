@@ -3,7 +3,7 @@ export const API =
   window.location.hostname.includes("127.0.0.1") ||
   window.location.hostname.includes("localhost")
     ? "http://localhost:8000/api"
-    : "https://evahstore-backend-production.up.railway.app";
+    : "https://evahstore-backend-production.up.railway.app/api";
 
 // Helper pour les headers (Centralisé)
 export function authHeaders(token) {
