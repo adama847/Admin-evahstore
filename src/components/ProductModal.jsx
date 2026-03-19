@@ -11,6 +11,12 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
         imageFile: null,
     });
 
+    // Fonction pour forcer le HTTPS sur les liens reçus du backend
+    const ensureHttps = (url) => {
+        if (!url) return "";
+        return url.replace("http://", "https://");
+    };
+
     useEffect(() => {
         if (product) {
             setForm({
@@ -19,7 +25,8 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
                 category: product.category || "",
                 badge: product.badge || "",
                 description: product.description || "",
-                imageUrl: product.image_url || "",
+                // On sécurise l'URL dès le chargement du produit
+                imageUrl: ensureHttps(product.image_url) || "",
                 imageFile: null,
             });
         } else {
@@ -29,13 +36,24 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
-        if (files) setForm({ ...form, imageFile: files[0] });
-        else setForm({ ...form, [name]: value });
+        if (files) {
+            setForm({ ...form, imageFile: files[0] });
+        } else {
+            // Si l'utilisateur colle une URL manuellement, on s'assure qu'elle soit en https
+            const finalValue = name === "imageUrl" ? ensureHttps(value) : value;
+            setForm({ ...form, [name]: finalValue });
+        }
     };
 
     const handleSubmit = () => onSave(form);
 
     if (!isOpen) return null;
+
+    // Déterminer la source de l'aperçu (Fichier local ou URL distante)
+    const previewSrc = form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageUrl;
+    
+    // Détecter si c'est une vidéo (via le type de fichier ou l'extension de l'URL)
+    const isVideo = form.imageFile?.type?.startsWith("video") || form.imageUrl?.toLowerCase().endsWith(".mp4");
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-5">
@@ -83,32 +101,36 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
                     </div>
 
                     <div>
-                        <label className="text-xs text-gray-50 uppercase mb-1 block">Image (URL ou fichier)</label>
+                        <label className="text-xs text-gray-50 uppercase mb-1 block">Image ou Vidéo (URL ou fichier)</label>
                         <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black mb-2" placeholder="https://..." />
-                        <input type="file" name="imageFile" onChange={handleChange} className="text-gray-900 border bg-gray-300 hover:bg-gray-400 rounded-2xl py-2 ms-2 mb-2" />
-                        {(form.imageFile?.type?.startsWith("video") || form.imageUrl?.endsWith(".mp4")) ? (
-                            <video
-                                src={form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageUrl}
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                preload="auto"
-                                className="w-full h-60 object-cover rounded-md border"
-                            />
-                        ) : (
-                            <img
-                                src={form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageUrl}
-                                alt="Preview"
-                                className="w-full h-60 object-cover rounded-md border"
-                            />
+                        <input type="file" name="imageFile" onChange={handleChange} className="text-gray-900 border bg-gray-300 hover:bg-gray-400 rounded-2xl py-2 ms-2 mb-2 w-full" />
+                        
+                        {previewSrc && (
+                            <div className="mt-2">
+                                {isVideo ? (
+                                    <video
+                                        src={previewSrc}
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        className="w-full h-60 object-cover rounded-md border border-[#D4AF37]"
+                                    />
+                                ) : (
+                                    <img
+                                        src={previewSrc}
+                                        alt="Preview"
+                                        className="w-full h-60 object-cover rounded-md border border-[#D4AF37]"
+                                    />
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
 
                 <div className="flex justify-end gap-3 p-6 border-t border-yellow-700">
                     <button className="px-4 py-2 rounded-lg bg-gray-700 border border-yellow-700 text-white" onClick={onClose}>Annuler</button>
-                    <button className="px-4 py-2 rounded-lg bg-[#D4AF37] text-black" onClick={handleSubmit}>✦ Enregistrer</button>
+                    <button className="px-4 py-2 rounded-lg bg-[#D4AF37] text-black font-bold" onClick={handleSubmit}>✦ Enregistrer</button>
                 </div>
             </div>
         </div>

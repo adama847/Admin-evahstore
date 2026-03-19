@@ -8,14 +8,20 @@ export default function Products({ token }) {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-const [currentPage, setCurrentPage] = useState(1);
-const productsPerPage = 6;
-const indexOfLastProduct = currentPage * productsPerPage;
-const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 6;
 
-const totalPages = Math.ceil(products.length / productsPerPage);
-  // Charger les produits
+  // Fonction pour forcer le HTTPS (évite le Mixed Content)
+  const secureUrl = (url) => {
+    if (!url) return "";
+    return url.replace("http://", "https://");
+  };
+
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(products.length / productsPerPage);
+
   useEffect(() => {
     async function fetchProducts() {
       try {
@@ -60,8 +66,12 @@ const totalPages = Math.ceil(products.length / productsPerPage);
     formData.append("category", form.category);
     formData.append("badge", form.badge);
     formData.append("description", form.description);
-    if (form.imageFile) formData.append("image", form.imageFile);
-    else if (form.imageUrl) formData.append("image_url", form.imageUrl);
+    
+    if (form.imageFile) {
+        formData.append("image", form.imageFile);
+    } else if (form.imageUrl) {
+        formData.append("image_url", form.imageUrl);
+    }
 
     try {
       const saved = await saveProduct(token, formData, editingProduct?.id);
@@ -80,65 +90,64 @@ const totalPages = Math.ceil(products.length / productsPerPage);
     }
   };
 
-  if (loading) return <div className="text-black text-center">Chargement des produits...</div>;
+  if (loading) return <div className="text-black text-center mt-10">Chargement des produits...</div>;
 
   return (
     <div className="space-y-4 p-6">
-      <h2 className="text-2xl font-bold text-black sm:text-center">Liste des Produits</h2>
+      <h2 className="text-2xl font-bold text-black sm:text-center uppercase tracking-widest">Liste des Produits</h2>
       <button
         onClick={handleAdd}
-        className="px-4 py-2 bg-[#D4AF37] font-bold text-black rounded hover:bg-yellow-500 transition"
+        className="px-6 py-2 bg-[#D4AF37] font-bold text-black rounded-lg shadow hover:bg-yellow-500 transition duration-300"
       >
-        Ajouter un produit
+        + Ajouter un produit
       </button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.length === 0 && <div className="text-gray-400">Aucun produit trouvé.</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {products.length === 0 && <div className="text-gray-500">Aucun produit trouvé.</div>}
         {currentProducts.map(product => (
-          <div key={product.id} className="bg-white group relative p-0 rounded-lg flex flex-col shadow justify-between z-10  ">
+          <div key={product.id} className="bg-white group relative p-0 rounded-xl flex flex-col shadow-lg overflow-hidden border border-gray-100 justify-between z-10">
             <div>
               {product.image_url && (
                 product.is_video ? (
                   <video
-                    src={product.image_url}
+                    src={secureUrl(product.image_url)} // Nettoyage HTTPS ici
                     autoPlay
                     muted
                     loop
                     playsInline
-                    preload="auto"
-                    className="w-100 h-80 object-cover rounded-md "
+                    className="w-full h-80 object-cover"
                   />
                 ) : (
                   <img
-                    src={product.image_url}
+                    src={secureUrl(product.image_url)} // Nettoyage HTTPS ici
                     alt={product.name}
                     loading="lazy"
-                    className="w-100 h-80 object-cover rounded-md  "
+                    className="w-full h-80 object-cover"
                   />
                 )
               )}
-              <h3 className="text-black mt-2  ms-5 text-xl font-bold font-serif">{product.name}</h3>
-              <p className="text-black ms-5 text-sm">{product.description}</p>
-              <p className="text-[#D4AF37] ms-5 mb-13 font-semibold mt-2">{product.price} FCFA</p>
-
+              <div className="p-4">
+                <h3 className="text-black text-xl font-bold font-serif">{product.name}</h3>
+                <p className="text-gray-600 text-sm line-clamp-2 mt-1">{product.description}</p>
+                <p className="text-[#D4AF37] font-bold mt-2 text-lg">{product.price} FCFA</p>
+              </div>
             </div>
-            <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
 
-    <button
-      onClick={() => handleEdit(product)}
-      className="flex-1 py-2 text-xs bg-blue-500 text-white rounded"
-    >
-      Modifier
-    </button>
-
-    <button
-      onClick={() => handleDelete(product.id)}
-      className="flex-1 py-2 text-xs bg-red-500 text-white rounded"
-    >
-      Supprimer
-    </button>
-
-  </div>
+            {/* Boutons d'action visibles au survol */}
+            <div className="absolute inset-x-0 bottom-0 bg-black/60 p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                <button
+                  onClick={() => handleEdit(product)}
+                  className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  Modifier
+                </button>
+                <button
+                  onClick={() => handleDelete(product.id)}
+                  className="flex-1 py-2 text-sm bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+                >
+                  Supprimer
+                </button>
+            </div>
           </div>
         ))}
       </div>
@@ -150,29 +159,28 @@ const totalPages = Math.ceil(products.length / productsPerPage);
         onSave={handleSave}
       />
 
-      <div className="flex justify-center items-center gap-4 mt-6">
-
-  <button
-    disabled={currentPage === 1}
-    onClick={() => setCurrentPage(currentPage - 1)}
-    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-  >
-    Précédent
-  </button>
-
-  <span className="font-semibold">
-    Page {currentPage} / {totalPages}
-  </span>
-
-  <button
-    disabled={currentPage === totalPages}
-    onClick={() => setCurrentPage(currentPage + 1)}
-    className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-  >
-    Suivant
-  </button>
-
-</div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 mt-10">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-30 hover:bg-gray-300 transition"
+          >
+            Précédent
+          </button>
+          <span className="font-semibold text-black">
+            Page {currentPage} sur {totalPages}
+          </span>
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-30 hover:bg-gray-300 transition"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
     </div>
   );
 }
