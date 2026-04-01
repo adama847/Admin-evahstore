@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-export default function ProductModal({ isOpen, onClose, onSave, product }) {
+export default function ProductModal({ isOpen, onClose, onSave, onDelete, product }) {
     const [form, setForm] = useState({
         name: "",
         price: "",
@@ -11,19 +11,10 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
         imageFile: null,
     });
 
-    // FONCTION CORRIGÉE : Ne force le HTTPS que hors mode local
     const secureUrl = (url) => {
         if (!url) return "";
-
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-        if (isLocal) {
-            // En local, on ne touche à rien pour éviter l'erreur ERR_CONNECTION_CLOSED
-            return url;
-        }
-
-        // En production, on assure le HTTPS
-        return url.replace("http://", "https://");
+        return isLocal ? url : url.replace("http://", "https://");
     };
 
     useEffect(() => {
@@ -34,113 +25,86 @@ export default function ProductModal({ isOpen, onClose, onSave, product }) {
                 category: product.category || "",
                 badge: product.badge || "",
                 description: product.description || "",
-                // Utilisation de la fonction sécurisée au chargement
                 imageUrl: secureUrl(product.image_url) || "",
                 imageFile: null,
             });
         } else {
             setForm({ name: "", price: "", category: "", badge: "", description: "", imageUrl: "", imageFile: null });
         }
-    }, [product]);
+    }, [product, isOpen]);
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
         if (files) {
             setForm({ ...form, imageFile: files[0] });
         } else {
-            // Si c'est l'URL, on applique la logique de sécurité intelligente
-            const finalValue = name === "imageUrl" ? secureUrl(value) : value;
-            setForm({ ...form, [name]: finalValue });
+            setForm({ ...form, [name]: name === "imageUrl" ? secureUrl(value) : value });
         }
     };
 
-    const handleSubmit = () => onSave(form);
-
     if (!isOpen) return null;
 
-    // Déterminer la source de l'aperçu
     const previewSrc = form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageUrl;
-    
-    // Détecter si c'est une vidéo
     const isVideo = form.imageFile?.type?.startsWith("video") || form.imageUrl?.toLowerCase().endsWith(".mp4");
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-5">
-            <div className="bg-[#000000] border border-[#D4AF37] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center p-6 border-b border-[#D4AF37]">
-                    <h2 className="text-[#D4AF37] font-serif text-xl">{product ? "Modifier Produit" : "Nouveau Produit"}</h2>
-                    <button onClick={onClose} className="text-gray-400 text-xl hover:text-white">✕</button>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-black border border-[#D4AF37] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                <div className="flex justify-between items-center p-5 border-b border-[#D4AF37]/30">
+                    <h2 className="text-[#D4AF37] font-serif text-lg uppercase tracking-widest">{product ? "Détails & Edition" : "Nouveau Produit"}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl transition">✕</button>
                 </div>
 
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-4 overflow-y-auto">
+                    {previewSrc && (
+                        <div className="relative h-40 w-full mb-4">
+                            {isVideo ? (
+                                <video src={previewSrc} autoPlay muted loop className="w-full h-full object-cover rounded-xl border border-[#D4AF37]/40" />
+                            ) : (
+                                <img src={previewSrc} alt="Preview" className="w-full h-full object-cover rounded-xl border border-[#D4AF37]/40" />
+                            )}
+                        </div>
+                    )}
+                    
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs text-gray-400 uppercase mb-1 block">Nom *</label>
-                            <input type="text" name="name" value={form.name} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black" />
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400 uppercase mb-1 block">Prix *</label>
-                            <input type="text" name="price" value={form.price} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black" />
-                        </div>
+                        <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="Nom" className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none" />
+                        <input type="text" name="price" value={form.price} onChange={handleChange} placeholder="Prix" className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-xs text-gray-50 uppercase mb-1 block">Catégorie *</label>
-                            <select name="category" value={form.category} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black">
-                                <option value="">— Choisir —</option>
-                                <option value="bracelet">Fétiche & Bracelet</option>
-                                <option value="bestseller">Best Seller</option>
-                                <option value="perruque">Perruque</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-xs text-gray-400 uppercase mb-1 block">Badge</label>
-                            <select name="badge" value={form.badge} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black">
-                                <option value="">Aucun</option>
-                                <option value="Nouveau">Nouveau</option>
-                                <option value="Promo">Promo</option>
-                            </select>
-                        </div>
+                        <select name="category" value={form.category} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none">
+                            <option value="">Catégorie</option>
+                            <option value="bracelet">Fétiche & Bracelet</option>
+                            <option value="bestseller">Best Seller</option>
+                            <option value="perruque">Perruque</option>
+                        </select>
+                        <select name="badge" value={form.badge} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none">
+                            <option value="">Badge (Aucun)</option>
+                            <option value="Nouveau">Nouveau</option>
+                            <option value="Promo">Promo</option>
+                        </select>
                     </div>
 
-                    <div>
-                        <label className="text-xs text-gray-50 uppercase mb-1 block">Description</label>
-                        <textarea name="description" value={form.description} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black" />
-                    </div>
+                    <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description..." className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none h-24" />
 
-                    <div>
-                        <label className="text-xs text-gray-50 uppercase mb-1 block">Image ou Vidéo (URL ou fichier)</label>
-                        <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-200 border border-[#D4AF37] text-black mb-2" placeholder="http://localhost:8000/..." />
-                        <input type="file" name="imageFile" onChange={handleChange} className="text-gray-900 border bg-gray-300 hover:bg-gray-400 rounded-2xl py-2 ms-2 mb-2 w-full" />
-                        
-                        {previewSrc && (
-                            <div className="mt-2">
-                                {isVideo ? (
-                                    <video
-                                        key={previewSrc} // Ajout d'une clé pour forcer le rafraîchissement si l'URL change
-                                        src={previewSrc}
-                                        autoPlay
-                                        muted
-                                        loop
-                                        playsInline
-                                        className="w-full h-60 object-cover rounded-md border border-[#D4AF37]"
-                                    />
-                                ) : (
-                                    <img
-                                        src={previewSrc}
-                                        alt="Preview"
-                                        className="w-full h-60 object-cover rounded-md border border-[#D4AF37]"
-                                    />
-                                )}
-                            </div>
-                        )}
+                    <div className="space-y-2">
+                        <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="Lien URL de l'image" className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-xs outline-none" />
+                        <input type="file" onChange={handleChange} className="w-full text-xs text-gray-400 file:bg-[#D4AF37] file:rounded-lg file:border-0 file:px-3 file:py-1 file:font-bold file:mr-3 cursor-pointer" />
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 p-6 border-t border-yellow-700">
-                    <button className="px-4 py-2 rounded-lg bg-gray-700 border border-yellow-700 text-white" onClick={onClose}>Annuler</button>
-                    <button className="px-4 py-2 rounded-lg bg-[#D4AF37] text-black font-bold" onClick={handleSubmit}>✦ Enregistrer</button>
+                <div className="p-5 border-t border-[#D4AF37]/30 bg-gray-900/50 flex flex-wrap gap-3 items-center">
+                    {product && (
+                        <button onClick={() => { onDelete(product.id); onClose(); }} className="px-4 py-2 bg-red-600/10 border border-red-600 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-bold">
+                            Supprimer
+                        </button>
+                    )}
+                    <div className="flex gap-3 ml-auto">
+                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Annuler</button>
+                        <button onClick={() => onSave(form)} className="px-6 py-2 bg-[#D4AF37] text-black font-bold rounded-lg hover:scale-105 transition shadow-lg shadow-[#D4AF37]/20">
+                            {product ? "Enregistrer" : "Créer"}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

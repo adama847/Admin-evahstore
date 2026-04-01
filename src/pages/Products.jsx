@@ -2,6 +2,12 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { getProducts, saveProduct, deleteProduct } from "../services/api";
 import ProductModal from "../components/ProductModal";
+import { Loader2 } from "lucide-react";
+
+// MODIFICATION : Remplace par l'URL de ton backend Laravel
+const API_BASE_URL = window.location.hostname === "localhost" 
+  ? "http://localhost:8000" 
+  : "https://railway.app"; 
 
 export default function Products({ token }) {
   const [products, setProducts] = useState([]);
@@ -11,25 +17,21 @@ export default function Products({ token }) {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 6;
 
-  // FONCTION CORRIGÉE : Ne force le HTTPS que si on n'est pas en local
-  const secureUrl = (url) => {
-    if (!url) return "";
+  // FONCTION CORRIGÉE POUR LARAVEL
+  const secureUrl = (path) => {
+    if (!path) return "";
     
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    
-    if (isLocal) {
-      // En local, on garde le HTTP (ou l'URL originale)
-      return url;
+    // Si c'est déjà une URL complète (ex: Cloudinary ou externe)
+    if (path.startsWith("http")) {
+      return window.location.hostname === "localhost" ? path : path.replace("http://", "https://");
     }
-    
-    // En production (Railway), on force le HTTPS pour éviter le "Mixed Content"
-    return url.replace("http://", "https://");
-  };
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(products.length / productsPerPage);
+    // Pour Laravel : On ajoute /storage/ si le chemin ne l'a pas déjà
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const storagePath = cleanPath.startsWith('/storage') ? cleanPath : `/storage${cleanPath}`;
+    
+    return `${API_BASE_URL}${storagePath}`;
+  };
 
   useEffect(() => {
     async function fetchProducts() {
@@ -37,8 +39,7 @@ export default function Products({ token }) {
         const data = await getProducts(token);
         setProducts(data || []);
       } catch (err) {
-        console.error(err);
-        toast.error("Impossible de charger les produits");
+        toast.error("Erreur de chargement");
       } finally {
         setLoading(false);
       }
@@ -46,149 +47,119 @@ export default function Products({ token }) {
     fetchProducts();
   }, [token]);
 
-  const handleAdd = () => {
-    setEditingProduct(null);
-    setModalOpen(true);
-  };
-
   const handleEdit = (product) => {
     setEditingProduct(product);
     setModalOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
+    if (!window.confirm("Supprimer ce produit ?")) return;
     try {
       await deleteProduct(token, id);
       setProducts(products.filter(p => p.id !== id));
-      toast.success("Produit supprimé !");
+      toast.success("Produit supprimé");
+      setModalOpen(false);
     } catch (err) {
-      console.error(err);
-      toast.error("Impossible de supprimer le produit");
+      toast.error("Erreur lors de la suppression");
     }
   };
 
   const handleSave = async (form) => {
     const formData = new FormData();
-    formData.append("name", form.name);
-    formData.append("price", form.price);
-    formData.append("category", form.category);
-    formData.append("badge", form.badge);
-    formData.append("description", form.description);
-    
-    if (form.imageFile) {
-        formData.append("image", form.imageFile);
-    } else if (form.imageUrl) {
-        formData.append("image_url", form.imageUrl);
-    }
+    // On boucle sur les clés du formulaire pour remplir le FormData
+    Object.keys(form).forEach(key => {
+        if (key === 'imageFile' && form[key]) {
+            // Si c'est une liste de fichiers (input file multiple ou simple)
+            const file = form[key] instanceof FileList ? form[key][0] : form[key];
+            if (file) formData.append("image", file);
+        } else if (key === 'imageUrl' && form[key]) {
+            formData.append("image_url", form[key]);
+        } else if (form[key] !== null && form[key] !== undefined) {
+            formData.append(key, form[key]);
+        }
+    });
 
     try {
       const saved = await saveProduct(token, formData, editingProduct?.id);
-      if (editingProduct) {
-        setProducts(products.map(p => (p.id === saved.id ? saved : p)));
-        toast.success("Produit modifié !");
-      } else {
-        setProducts([saved, ...products]);
-        toast.success("Produit ajouté !");
-      }
+      setProducts(editingProduct ? products.map(p => (p.id === saved.id ? saved : p)) : [saved, ...products]);
+      toast.success(editingProduct ? "Modifié !" : "Ajouté !");
       setModalOpen(false);
-      setEditingProduct(null);
     } catch (err) {
-      console.error(err);
-      toast.error("Impossible de sauvegarder le produit");
+      toast.error("Erreur de sauvegarde");
     }
   };
 
-  if (loading) return <div className="text-black text-center mt-10">Chargement des produits...</div>;
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-[#D4AF37]" size={40} />
+    </div>
+  );
+
+  const currentProducts = products.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
 
   return (
-    <div className="space-y-4 p-6">
-      <h2 className="text-2xl font-bold text-black sm:text-center uppercase tracking-widest">Liste des Produits</h2>
-      <button
-        onClick={handleAdd}
-        className="px-6 py-2 bg-[#D4AF37] font-bold text-black rounded-lg shadow hover:bg-yellow-500 transition duration-300"
-      >
-        + Ajouter un produit
-      </button>
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold uppercase tracking-widest border-l-4 border-[#D4AF37] pl-4">Catalogue Admin</h2>
+        <button 
+          onClick={() => { setEditingProduct(null); setModalOpen(true); }} 
+          className="bg-[#D4AF37] px-6 py-2 rounded-full font-bold text-black hover:bg-yellow-500 transition shadow-lg"
+        >
+          + Nouveau Produit
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.length === 0 && <div className="text-gray-500">Aucun produit trouvé.</div>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {currentProducts.map(product => (
-          <div key={product.id} className="bg-white group relative p-0 rounded-xl flex flex-col shadow-lg overflow-hidden border border-gray-100 justify-between z-10">
-            <div>
-              {product.image_url && (
-                product.is_video ? (
-                  <video
-                    src={secureUrl(product.image_url)} 
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-80 object-cover"
-                  />
-                ) : (
-                  <img
-                    src={secureUrl(product.image_url)} 
-                    alt={product.name}
-                    loading="lazy"
-                    className="w-full h-80 object-cover"
-                  />
-                )
-              )}
-              <div className="p-4">
-                <h3 className="text-black text-xl font-bold font-serif">{product.name}</h3>
-                <p className="text-gray-600 text-sm line-clamp-2 mt-1">{product.description}</p>
-                <p className="text-[#D4AF37] font-bold mt-2 text-lg">{product.price} FCFA</p>
-              </div>
-            </div>
+          <div 
+            key={product.id} 
+            onClick={() => handleEdit(product)} 
+            className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-1 group"
+          >
+            <div className="relative h-72 overflow-hidden bg-gray-50">
+  {/* LOGIQUE D'AFFICHAGE IMAGE OU VIDÉO */}
+  {product.is_video ? (
+    <video 
+      src={secureUrl(product.image_url)} 
+      className="w-full h-full object-cover"
+      autoPlay     // Lance la vidéo tout seul
+      loop         // Recommence à la fin
+      muted        // Obligatoire pour l'autoPlay
+      playsInline  // Important pour le bon fonctionnement sur iPhone/Safari
+    />
+  ) : (
+    <img 
+      src={secureUrl(product.image_url)} 
+      alt={product.name} 
+      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+      onError={(e) => { e.target.src = "https://placeholder.com"; }}
+    />
+  )}
+  
+  {/* Overlay au survol */}
+  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+    <span className="bg-white text-black px-4 py-2 rounded-full text-xs font-bold shadow-xl uppercase">
+      Gérer le produit
+    </span>
+  </div>
+</div>
 
-            <div className="absolute inset-x-0 bottom-0 bg-black/60 p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                <button
-                  onClick={() => handleEdit(product)}
-                  className="flex-1 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-                >
-                  Modifier
-                </button>
-                <button
-                  onClick={() => handleDelete(product.id)}
-                  className="flex-1 py-2 text-sm bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
-                >
-                  Supprimer
-                </button>
+            <div className="p-5">
+              <h3 className="font-serif text-xl font-bold text-gray-900">{product.name}</h3>
+              <p className="text-[#D4AF37] font-bold text-lg mt-1">{product.price} FCFA</p>
+              <p className="text-gray-400 text-xs mt-2 uppercase">{product.category}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <ProductModal
-        isOpen={modalOpen}
-        product={editingProduct}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSave}
+      <ProductModal 
+        isOpen={modalOpen} 
+        product={editingProduct} 
+        onClose={() => setModalOpen(false)} 
+        onSave={handleSave} 
+        onDelete={handleDelete} 
       />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-10">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(currentPage - 1)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-30 hover:bg-gray-300 transition"
-          >
-            Précédent
-          </button>
-          <span className="font-semibold text-black">
-            Page {currentPage} sur {totalPages}
-          </span>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(currentPage + 1)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-30 hover:bg-gray-300 transition"
-          >
-            Suivant
-          </button>
-        </div>
-      )}
     </div>
   );
 }

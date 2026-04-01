@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getStats, getProducts } from "../services/api"; // Ajoutez getProducts
 import toast from "react-hot-toast";
 import { GiBigDiamondRing } from "react-icons/gi";
+import { Loader2 } from "lucide-react";
 
 export default function Dashboard({ token }) {
   const [stats, setStats] = useState({ total: 0, bracelet: 0, bestseller: 0, perruque: 0 });
@@ -54,8 +55,12 @@ export default function Dashboard({ token }) {
     { id: "perruque", label: "Perruques", value: stats.perruque, icon: "🌊" },
   ];
 
-  if (loading) return <div className="text-black text-center p-10">Chargement...</div>;
-
+if (loading) return (
+  <div className="flex flex-col items-center justify-center p-20 gap-3">
+    <Loader2 className="h-10 w-10 animate-spin text-[#0a0904]" />
+    <span className="text-[#dbbc0e] font-medium animate-pulse">Un instant...</span>
+  </div>
+); 
   return (
     <div className="p-6 space-y-8">
       <h2 className="text-2xl font-bold text-black uppercase tracking-widest">Tableau de bord</h2>
