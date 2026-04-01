@@ -73,7 +73,6 @@ export default function ProductModal({ isOpen, onClose, onSave, onDelete, produc
 
                     <div className="grid grid-cols-2 gap-4">
                         <select name="category" value={form.category} onChange={handleChange} className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:border-[#D4AF37] outline-none">
-                            <option value="">Catégorie</option>
                             <option value="bracelet">Fétiche & Bracelet</option>
                             <option value="bestseller">Best Seller</option>
                             <option value="perruque">Perruque</option>
@@ -89,7 +88,7 @@ export default function ProductModal({ isOpen, onClose, onSave, onDelete, produc
 
                     <div className="space-y-2">
                         <input type="text" name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="Lien URL de l'image" className="w-full p-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-xs outline-none" />
-                        <input type="file" onChange={handleChange} className="w-full text-xs text-gray-400 file:bg-[#D4AF37] file:rounded-lg file:border-0 file:px-3 file:py-1 file:font-bold file:mr-3 cursor-pointer" />
+                        <input type="file" onChange={handleChange} className="w-full text-xs text-gray-100 file:bg-[#D4AF37] file:rounded-lg file:border-0 file:px-3 file:py-1 file:font-bold file:mr-3 cursor-pointer" />
                     </div>
                 </div>
 
